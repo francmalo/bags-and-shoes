@@ -37,9 +37,8 @@ try {
 }
 
 ?>
-
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html>
 
 <head>
     <!-- Meta Data -->
@@ -67,11 +66,29 @@ try {
     <!-- Site Stylesheet -->
     <link rel="stylesheet" href="assets/css/app.css" type="text/css">
 
+
+
+
 </head>
 
 <body id="home-version-1" class="home-version-1" data-style="default">
 
     <div class="site-content">
+
+
+        <!--=========================-->
+        <!--=        Header         =-->
+        <!--=========================-->
+
+
+
+
+
+
+
+        <!--=========================-->
+        <!--=        Mobile Header         =-->
+        <!--=========================-->
 
 
 
@@ -80,20 +97,10 @@ try {
         <!--=        Breadcrumb         =-->
         <!--=========================-->
 
-        <section class="breadcrumb-area">
-            <div class="container-fluid custom-container">
-                <div class="row">
-                    <div class="col-xl-12">
-                        <div class="bc-inner">
-                            <p><a href="#">Home |</a> Shop</p>
-                        </div>
-                    </div>
-                    <!-- /.col-xl-12 -->
-                </div>
-                <!-- /.row -->
-            </div>
-            <!-- /.container -->
-        </section>
+
+        <!--=========================-->
+        <!--=        Shop area          =-->
+        <!--=========================-->
 
         <section class="shop-area">
             <div class="container-fluid custom-container">
@@ -201,16 +208,17 @@ try {
                 </div>
             </div>
         </section>
+        <!-- /.shop-area -->
+
+        <!--=========================-->
+        <!--=   Subscribe area      =-->
+        <!--=========================-->
 
 
 
 
-
-        <div class="backtotop">
-            <i class="fa fa-angle-up backtotop_btn"></i>
-        </div>
-
-
+        <!-- Back to top
+	============================================= -->
 
         <div class="backtotop">
             <i class="fa fa-angle-up backtotop_btn"></i>
@@ -359,10 +367,10 @@ try {
 
 
 
+
+
     </div>
     <!-- /#site -->
-
-    <!-- Add your JavaScript links here -->
 
     <!-- Dependency Scripts -->
     <script src="dependencies/jquery/jquery.min.js"></script>
@@ -384,10 +392,7 @@ try {
 
     <!-- Site Scripts -->
     <script src="assets/js/app.js"></script>
+
 </body>
 
 </html>
-
-<?php
-$conn->close();
-?>

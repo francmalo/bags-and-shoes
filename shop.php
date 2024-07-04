@@ -12,22 +12,40 @@ function getCategories($conn) {
     return $conn->query($sql);
 }
 
-// Function to fetch products
+// Function to fetch products with additional details
 function getProducts($conn) {
-    $sql = "SELECT p.*, b.name AS brand_name, c.name AS category_name, t.name AS type_name, g.name AS gender_name, pp.photo_url 
+    $sql = "SELECT p.*, b.name AS brand_name, c.name AS category_name, t.name AS type_name, g.name AS gender_name, 
+                   MAX(pp.photo_url) AS photo_url, GROUP_CONCAT(DISTINCT s.size_value) AS sizes, 
+                   GROUP_CONCAT(DISTINCT cl.color_name) AS colors,
+                   SUM(pa.stock_quantity) AS total_stock
             FROM Products p
             LEFT JOIN Brands b ON p.brand_id = b.brand_id
             LEFT JOIN Categories c ON p.category_id = c.category_id
             LEFT JOIN Types t ON p.type_id = t.type_id
             LEFT JOIN Genders g ON p.gender_id = g.gender_id
-            LEFT JOIN Product_Photos pp ON p.product_id = pp.product_id AND pp.is_primary = 1";
+            LEFT JOIN Product_Photos pp ON p.product_id = pp.product_id AND pp.is_primary = 1
+            LEFT JOIN Product_Attributes pa ON p.product_id = pa.product_id
+            LEFT JOIN Sizes s ON pa.size_id = s.size_id
+            LEFT JOIN Colors cl ON pa.color_id = cl.color_id
+            GROUP BY p.product_id, p.name, p.description, p.price, p.brand_id, p.category_id, p.type_id, p.gender_id,
+                     b.name, c.name, t.name, g.name";
     return $conn->query($sql);
 }
 
-// Fetch categories and products
-$categories = getCategories($conn);
-$products = getProducts($conn);
+// Function to fetch additional photos for a product
+function getProductPhotos($conn, $productId) {
+    $sql = "SELECT photo_url FROM Product_Photos WHERE product_id = ? AND is_primary = 0";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $productId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
 
+
+$sql="SELECT * FROM Product_Photos WHERE product_id = 1 AND is_primary = 0";
+
+// Fetch categories and products
 try {
     $categories = getCategories($conn);
     $products = getProducts($conn);
@@ -71,36 +89,19 @@ try {
 
 </head>
 
+
+
+
+
 <body id="home-version-1" class="home-version-1" data-style="default">
 
     <div class="site-content">
 
 
-        <!--=========================-->
-        <!--=        Header         =-->
-        <!--=========================-->
 
 
 
 
-
-
-
-        <!--=========================-->
-        <!--=        Mobile Header         =-->
-        <!--=========================-->
-
-
-
-
-        <!--=========================-->
-        <!--=        Breadcrumb         =-->
-        <!--=========================-->
-
-
-        <!--=========================-->
-        <!--=        Shop area          =-->
-        <!--=========================-->
 
         <section class="shop-area">
             <div class="container-fluid custom-container">
@@ -115,35 +116,17 @@ try {
                                 <h6>PRODUCT CATEGORIES</h6>
                                 <ul>
                                     <?php
-                                if ($categories->num_rows > 0) {
-                                    while($category = $categories->fetch_assoc()) {
-                                        echo "<li><a href='#'>{$category['name']}</a> <span>({$category['product_count']})</span></li>";
+                                    if ($categories->num_rows > 0) {
+                                        while($category = $categories->fetch_assoc()) {
+                                            echo "<li><a href='#'>{$category['name']}</a> <span>({$category['product_count']})</span></li>";
+                                        }
+                                    } else {
+                                        echo "<li>No categories found</li>";
                                     }
-                                } else {
-                                    echo "<li>No categories found</li>";
-                                }
-                                ?>
+                                    ?>
                                 </ul>
                             </div>
-                            <div class="sidebar-widget range-widget">
-                                <h6>SEARCH BY PRICE</h6>
-                                <div class="price-range">
-                                    <div id="slider-range"></div>
-                                    <span>Price :</span>
-                                    <input type="text" id="amount">
-                                </div>
-                            </div>
-
-                            <div class="sidebar-widget color-widget">
-                                <h6>PRODUCT COLOR</h6>
-                                <ul>
-                                    <li><a href="#"></a></li>
-                                    <li><a href="#"></a></li>
-                                    <li><a href="#"></a></li>
-                                    <li><a href="#"></a></li>
-                                    <li><a href="#"></a></li>
-                                </ul>
-                            </div>
+                            <!-- Other sidebar widgets... -->
                         </div>
                     </div>
                     <div class="order-1 order-lg-2 col-lg-9 col-xl-9">
@@ -156,9 +139,9 @@ try {
                                     aria-labelledby="home-tab">
                                     <div class="row">
                                         <?php
-                                    if ($products->num_rows > 0) {
-                                        while($product = $products->fetch_assoc()) {
-                                            ?>
+                                        if ($products->num_rows > 0) {
+                                            while($product = $products->fetch_assoc()) {
+                                                ?>
                                         <div class="col-sm-6 col-xl-4">
                                             <div class="sin-product style-two">
                                                 <div class="pro-img">
@@ -169,21 +152,18 @@ try {
                                                     <h5 class="pro-title"><a
                                                             href="product.php?id=<?php echo $product['product_id']; ?>"><?php echo htmlspecialchars($product['name']); ?></a>
                                                     </h5>
-                                                    <div class="color-variation">
-                                                        <!-- Add color variations here if needed -->
-                                                    </div>
                                                     <p><?php echo htmlspecialchars($product['gender_name']); ?> /
-                                                        <span>$<?php echo number_format($product['price'], 2); ?></span>
+                                                        <span>Ksh<?php echo number_format($product['price'], 2); ?></span>
                                                     </p>
                                                 </div>
                                                 <div class="icon-wrapper">
                                                     <div class="pro-icon">
                                                         <ul>
                                                             <li><a href="#"><i
-                                                                        class="flaticon-valentines-heart"></i></a>
-                                                            </li>
+                                                                        class="flaticon-valentines-heart"></i></a></li>
                                                             <li><a href="#"><i class="flaticon-compare"></i></a></li>
-                                                            <li><a href="#" class="trigger"><i
+                                                            <li><a
+                                                                    href="product.php?id=<?php echo $product['product_id']; ?>"><i
                                                                         class="flaticon-eye"></i></a>
                                                             </li>
                                                         </ul>
@@ -195,11 +175,11 @@ try {
                                             </div>
                                         </div>
                                         <?php
+                                            }
+                                        } else {
+                                            echo "<p>No products found</p>";
                                         }
-                                    } else {
-                                        echo "<p>No products found</p>";
-                                    }
-                                    ?>
+                                        ?>
                                     </div>
                                 </div>
                             </div>
@@ -209,163 +189,6 @@ try {
             </div>
         </section>
         <!-- /.shop-area -->
-
-        <!--=========================-->
-        <!--=   Subscribe area      =-->
-        <!--=========================-->
-
-
-
-
-        <!-- Back to top
-	============================================= -->
-
-        <div class="backtotop">
-            <i class="fa fa-angle-up backtotop_btn"></i>
-        </div>
-
-
-
-
-        <!--=========================-->
-        <!--=   Product Quick view area      =-->
-        <!--=========================-->
-
-        <!-- Quick View -->
-        <div class="modal quickview-wrapper">
-            <div class="quickview">
-                <div class="row">
-                    <div class="col-12">
-                        <span class="close-qv">
-                            <i class="flaticon-close"></i>
-                        </span>
-                    </div>
-                    <div class="col-md-6">
-                        <!-- Product View Slider -->
-                        <div class="quickview-slider">
-                            <div class="slider-for">
-                                <div class="">
-                                    <img src="media/images/product/single/b1.jpg" alt="Thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b2.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b3.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b4.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b5.jpg" alt="Thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b1.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b2.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b3.jpg" alt="thumb">
-                                </div>
-                            </div>
-
-                            <div class="slider-nav">
-
-                                <div class="">
-                                    <img src="media/images/product/single/b1.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b2.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b3.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <div class="">
-                                        <img src="media/images/product/single/b4.jpg" alt="Thumb">
-                                    </div>
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b5.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b1.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b2.jpg" alt="thumb">
-                                </div>
-                                <div class="">
-                                    <img src="media/images/product/single/b3.jpg" alt="thumb">
-                                </div>
-                            </div>
-                        </div>
-                        <!-- /.quickview-slider -->
-                    </div>
-                    <!-- /.col-xl-6 -->
-
-                    <div class="col-md-6">
-                        <div class="product-details">
-                            <h5 class="pro-title"><a href="#">Woman fashion dress</a></h5>
-                            <span class="price">Price : $387</span>
-                            <div class="size-variation">
-                                <span>size :</span>
-                                <select name="size-value">
-                                    <option value="">1</option>
-                                    <option value="">2</option>
-                                    <option value="">3</option>
-                                    <option value="">4</option>
-                                    <option value="">5</option>
-                                </select>
-                            </div>
-                            <div class="color-variation">
-                                <span>color :</span>
-                                <ul>
-                                    <li><i class="fas fa-circle"></i></li>
-                                    <li><i class="fas fa-circle"></i></li>
-                                    <li><i class="fas fa-circle"></i></li>
-                                    <li><i class="fas fa-circle"></i></li>
-                                </ul>
-                            </div>
-
-                            <div class="add-tocart-wrap">
-                                <!--PRODUCT INCREASE BUTTON START-->
-                                <div class="cart-plus-minus-button">
-                                    <input type="text" value="1" name="qtybutton" class="cart-plus-minus">
-                                </div>
-                                <a href="#" class="add-to-cart"><i class="flaticon-shopping-purse-icon"></i>Add to
-                                    Cart</a>
-                                <!-- <a href="#"><i class="flaticon-valentines-heart"></i></a> -->
-                            </div>
-
-                            <!-- <span>SKU:	N/A</span>
-								<p>Tags <a href="#">boys,</a><a href="#"> dress,</a><a href="#">Rok-dress</a></p> -->
-
-                            <p>But I must explain to you how all this mistaken idedenounc pleasure and praisi pain was
-                                born and I will give you a complete accosystem, and expound the actu teachings of the
-                                great explore tmaster-builder of human happiness. No one rejects, dislikes,
-                                or avoids.</p>
-
-                            <div class="product-social">
-                                <span>Share :</span>
-                                <ul>
-                                    <li><a href="#"><i class="fab fa-facebook-f"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-twitter"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-instagram"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                </ul>
-                            </div>
-
-                        </div>
-                        <!-- /.product-details -->
-                    </div>
-                    <!-- /.col-xl-6 -->
-                </div>
-                <!-- /.row -->
-            </div>
-        </div>
-
-
 
 
 
@@ -386,12 +209,13 @@ try {
     <script src="dependencies/slick-carousel/js/slick.js"></script>
     <script src="dependencies/headroom/js/headroom.js"></script>
     <script src="dependencies/jquery-ui/js/jquery-ui.min.js"></script>
-    <!--Google map api -->
+    <!-- Google map api -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBsBrMPsyNtpwKXPPpG54XwJXnyobfMAIc"></script>
-
 
     <!-- Site Scripts -->
     <script src="assets/js/app.js"></script>
+
+
 
 </body>
 
